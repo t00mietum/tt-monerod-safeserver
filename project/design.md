@@ -575,7 +575,7 @@ cicd/                       build, test, and release scripts
 
 - The service account doesn't have sudo, a login shell, a home, or any other groups.
 
-- In Docker mode `monerod` cna't see anything outside its binaries and data. In native mode it's limited by file modes only.
+- In Docker mode `monerod` can't see anything outside its binaries and data. In native mode it's limited by file modes only.
 
 - The config doesn't have any secrets in it. The RPC login is in `bitmonero.conf`, with mode 0660.
 
