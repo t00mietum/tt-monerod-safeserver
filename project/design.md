@@ -528,6 +528,8 @@ cicd/                       build, test, and release scripts
 
 - The table only drops traffic. A drop in another table still applies, so ufw or firewalld also has to let the wallet's host in. `repair` checks for taht rule, and prints the command when it's missing. The tool never changes another firewall's rules.
 
+- A ufw reload or disable only rewrites ufw's own tables, so the tool's table stays loaded.
+
 ### Wallets
 
 - Setup for Feather and other wallets, on the same host, on the LAN, or away from it, is in [local-network-wallets.md](local-network-wallets.md).
