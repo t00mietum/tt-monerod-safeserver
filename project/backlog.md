@@ -122,7 +122,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 		- Resistant to errors, so one bad line doesn't sink the whole thing.
 		- Overridden by program options at run-time.
 	- Decisions:
-		- Config is shcl, in `/etc/tt-monerodctl/config.shcl`, and `setup` writes it, per `design.md`. That replaces the earlier plan of a per-user YAML or TOML file under `~/.config`, which would've been made on the first changed setting.
+		- Config is shcl, in `/etc/tt-monerod/config.shcl`, and `setup` writes it, per `design.md`. That replaces the earlier plan of a per-user YAML or TOML file under `~/.config`, which would've been made on the first changed setting.
 
 - Start at boot
 	- ID: 2026111110002911

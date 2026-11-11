@@ -6,7 +6,7 @@
 <!-- TOC ignore:true -->
 # monerod options
 
-This doc lists the `monerod` options that `tt-monerodctl` passes and why, plus the ones that were tried and dropped. They were checked against `monerod` v0.18.4.0, with its `--help` and the `ANONYMITY_NETWORKS.md` that comes in the release archive.
+This doc lists the `monerod` options that `tt-monerod` passes and why, plus the ones that were tried and dropped. They were checked against `monerod` v0.18.4.0, with its `--help` and the `ANONYMITY_NETWORKS.md` that comes in the release archive.
 
 <!-- TOC ignore:true -->
 ## Table of contents
@@ -49,7 +49,7 @@ This doc lists the `monerod` options that `tt-monerodctl` passes and why, plus t
 
 - A common mistake is advertising one port while Tor forwards a different one. Peers that dial the advertised address then reach whatever listens behind the forwarded port. If that's the public p2p port, they get treated as public peers from localhost, and the Tor zone listener never gets a connection.
 
-- `tt-monerodctl` uses one number, `anonInboundPort`, for the onion port, the forwarded port, and the listener.
+- `tt-monerod` uses one number, `anonInboundPort`, for the onion port, the forwarded port, and the listener.
 
 ### Why there's no onion port for the clearnet zone
 

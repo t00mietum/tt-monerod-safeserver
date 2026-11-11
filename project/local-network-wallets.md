@@ -34,7 +34,7 @@ This doc explains how to point a wallet at the node, from the same host, from an
 
 - A transaction sent through the RPC goes out only to the node's Tor zone peers. So sends leave over Tor, even when the wallet talks to the node directly.
 
-- Without any Tor zone peers connected, `monerod` queues the transaction and sends it once one connects. `tt-monerodctl status` warns when that happens.
+- Without any Tor zone peers connected, `monerod` queues the transaction and sends it once one connects. `tt-monerod status` warns when that happens.
 
 ## Node settings
 
@@ -44,11 +44,11 @@ This doc explains how to point a wallet at the node, from the same host, from an
 | Another LAN host | the node's LAN address | the wallet's address    | `false`
 | Anywhere         | either of the above    | as above                | `true`
 
-- After a change, run `tt-monerodctl repair` and restart the node.
+- After a change, run `tt-monerod repair` and restart the node.
 
 - On a LAN address, only the wallet's host should be able to reach the RPC port, since RPC traffic on the LAN isn't encrypted. With `firewall` on, the tool's own rules drop RPC connections from any address that isn't in `rpcAllowFrom`.
 
-- When ufw or firewalld is active, it also has to let the wallet's host in. `tt-monerodctl repair` prints the command when that rule is missing. With ufw, for example:
+- When ufw or firewalld is active, it also has to let the wallet's host in. `tt-monerod repair` prints the command when that rule is missing. With ufw, for example:
 
 	~~~bash
 	sudo ufw allow from 192.168.1.50 to any port 18081 proto tcp
@@ -74,7 +74,7 @@ Add the node under Settings, Network, Node. Turn off "Let Feather manage this li
 
 ### Wallet away from the LAN
 
-- Turn on `rpcOnion` on the node. `tt-monerodctl status` shows the RPC onion address.
+- Turn on `rpcOnion` on the node. `tt-monerod status` shows the RPC onion address.
 
 - Node address: the login, then the onion address and `rpcOnionPort`, such as `<username>:<password>@<address>.onion:18089`.
 
@@ -101,9 +101,9 @@ Add the node under Settings, Network, Node. Turn off "Let Feather manage this li
 ## Troubleshooting
 
 - Feather won't connect:
-	- `tt-monerodctl status` shows which address the RPC listens on. It has to match the wallet's node address.
+	- `tt-monerod status` shows which address the RPC listens on. It has to match the wallet's node address.
 	- Check the username and password in the node address against `rpc-login`.
 	- For a LAN node, check the address range, `rpcAllowFrom`, and the ufw or firewalld rule above.
 
 - A send shows in the wallet but never confirms:
-	- `tt-monerodctl status` shows whether a transaction is waiting for a Tor zone peer. It goes out once one connects.
+	- `tt-monerod status` shows whether a transaction is waiting for a Tor zone peer. It goes out once one connects.

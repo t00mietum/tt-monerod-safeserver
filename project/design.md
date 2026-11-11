@@ -103,14 +103,14 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 ## Commands
 
 ~~~text
-tt-monerodctl start   [--native] [--restart-tor] [--debug] [--dry-run] [--foreground]
-tt-monerodctl stop    [--dry-run]
-tt-monerodctl status
-tt-monerodctl watch   [--interval N]
-tt-monerodctl setup   [--yes] [--dry-run] [setup options]
-tt-monerodctl update  [--yes] [--dry-run] [--self] [--monerod] [--tor] [--image]
-tt-monerodctl repair  [--yes] [--dry-run] [--check]
-tt-monerodctl --help | --about | --version
+tt-monerod start   [--native] [--restart-tor] [--debug] [--dry-run] [--foreground]
+tt-monerod stop    [--dry-run]
+tt-monerod status
+tt-monerod watch   [--interval N]
+tt-monerod setup   [--yes] [--dry-run] [setup options]
+tt-monerod update  [--yes] [--dry-run] [--self] [--monerod] [--tor] [--image]
+tt-monerod repair  [--yes] [--dry-run] [--check]
+tt-monerod --help | --about | --version
 Common:  --config PATH
 ~~~
 
@@ -236,7 +236,7 @@ Common:  --config PATH
 
 ~~~text
 go.mod
-source/cmd/tt-monerodctl/   main package, argument parsing
+source/cmd/tt-monerod/      main package, argument parsing
 source/internal/config/     config load and checks
 source/internal/host/       command runner, sudo, dry run
 source/internal/monerod/    monerod argument list
@@ -308,7 +308,7 @@ cicd/                       build, test, and release scripts
 	- Feather sends traffic for local addresses directly, never over Tor, and wallet sync over Tor is slow.
 	- An onion address for the RPC is there for wallets away from the LAN.
 
-- Start at boot uses a systemd unit that runs `tt-monerodctl start --foreground` as root, rather than a unit that runs `monerod` directly.
+- Start at boot uses a systemd unit that runs `tt-monerod start --foreground` as root, rather than a unit that runs `monerod` directly.
 	- The ownership hand-off, snapshots, and Tor checks then work the same way at boot as by hand.
 
 - On NixOS, a NixOS module declares the account, the onion services, Docker, the config file, and the boot unit.
@@ -364,7 +364,7 @@ cicd/                       build, test, and release scripts
 
 ### Configuration model
 
-- One file, `/etc/tt-monerodctl/config.shcl`, owned by root and readable by all. `--config` points elsewhere.
+- One file, `/etc/tt-monerod/config.shcl`, owned by root and readable by all. `--config` points elsewhere.
 
 - An unknown key or a bad value gets a warning each run, and the default is used.
 
@@ -442,7 +442,7 @@ cicd/                       build, test, and release scripts
 
 - All sudo happens in the foreground, right after one `sudo -v`. Sudo never runs inside a detached session.
 
-- The service account never runs `tt-monerodctl`, so that way it doesn't need to read the binary.
+- The service account never runs `tt-monerod`, so that way it doesn't need to read the binary.
 
 ### Why Docker
 
@@ -509,9 +509,9 @@ cicd/                       build, test, and release scripts
 
 ### Firewall
 
-- With `firewall` on, the tool keeps its rules in its own nftables table, `inet tt_monerodctl`, so they cover IPv4 and IPv6.
+- With `firewall` on, the tool keeps its rules in its own nftables table, `inet tt_monerod`, so they cover IPv4 and IPv6.
 
-- `setup` and `repair` write the rules to `/etc/tt-monerodctl/firewall.nft`, from the config. `tt-monerodctl-firewall.service` loads that file at boot.
+- `setup` and `repair` write the rules to `/etc/tt-monerod/firewall.nft`, from the config. `tt-monerod-firewall.service` loads that file at boot.
 	- It loads it again whenever `nftables.service` starts, restarts, or reloads. Debian's `nftables.conf` flushes every table, the tool's included.
 	- The file deletes the old table and adds the new one in a single nft transaction, so there's no gap without rules.
 
@@ -538,11 +538,11 @@ cicd/                       build, test, and release scripts
 
 ### Boot
 
-- With `startAtBoot` on, `setup` and `repair` install `tt-monerodctl.service` and enable it.
-	- `ExecStart` runs `tt-monerodctl start --foreground`, and `ExecStop` runs `tt-monerodctl stop`.
+- With `startAtBoot` on, `setup` and `repair` install `tt-monerod.service` and enable it.
+	- `ExecStart` runs `tt-monerod start --foreground`, and `ExecStop` runs `tt-monerod stop`.
 	- `TimeoutStopSec` is a little longer than `stopTimeout`, so systemd doesn't kill `monerod` first.
 	- It starts after `network-online.target`, `tor.service`, and `docker.service` when those are used.
-	- With `firewall` on, it requires `tt-monerodctl-firewall.service`, so `monerod` never starts at boot without the rules.
+	- With `firewall` on, it requires `tt-monerod-firewall.service`, so `monerod` never starts at boot without the rules.
 
 - With `startAtBoot` off, `repair` disables and removes the unit.
 
@@ -552,11 +552,11 @@ cicd/                       build, test, and release scripts
 	- The service account and group.
 	- Tor, with the p2p onion service and the optional RPC onion service.
 	- Docker, in Docker mode.
-	- `/etc/tt-monerodctl/config.shcl`, written from module options.
+	- `/etc/tt-monerod/config.shcl`, written from module options.
 	- The firewall unit and its rules.
 	- The boot unit.
 
-- `tt-monerodctl` detects NixOS by the `/etc/NIXOS` file. There, `setup` and `repair` still handle the data tree, the `monerod` download, and `bitmonero.conf`. For the rest they only check, and print the module options to set.
+- `tt-monerod` detects NixOS by the `/etc/NIXOS` file. There, `setup` and `repair` still handle the data tree, the `monerod` download, and `bitmonero.conf`. For the rest they only check, and print the module options to set.
 
 ### ZFS snapshots
 
