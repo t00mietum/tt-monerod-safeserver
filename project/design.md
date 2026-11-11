@@ -565,7 +565,7 @@ cicd/                       build, test, and release scripts
 	- On `anonInboundPort` and `rpcOnionPort`, always. Tor reaches them over loopback.
 	- On `p2pPort`, unless `p2pBindIP` isn't a loopback address.
 
-- The table only drops traffic. A drop in another table still applies, so ufw or firewalld also has to let the wallet's host in. `repair` checks for taht rule, and prints the command when it's missing. The tool never changes another firewall's rules.
+- The table only drops traffic. A drop in another table still applies, so ufw or firewalld also has to let the wallet's host in. `repair` checks for that rule, and prints the command when it's missing. The tool never changes another firewall's rules.
 
 - A ufw reload or disable only rewrites ufw's own tables, so the tool's table stays loaded.
 
