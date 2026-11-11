@@ -599,7 +599,7 @@ cicd/                       build, test, and release scripts
 
 ## Needs more thought
 
-- Stopping `nftables.service` flushes every table, the tool's included, and nothing puts it back until the next start. `monerod` keeps running without its rules in the meantime.
+- Stopping `nftables.service` flushes every table, the tool's included, and the table stays gone until the next start. `monerod` keeps running without its rules in the meantime.
 
 - Tool releases could be signed, beyond a SHA-256 sum.
 
