@@ -23,6 +23,21 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 
 ## Issues
 
+- Use tt-safeserver
+	- ID: 2026111114120017
+	- Type: Task
+	- Status: Queued
+	- Priority: High
+	- Opened: 2026-11-11
+	- Opened by: t00mietum
+	- Requirements:
+		- Take the shared parts from `tt-safeserver`, per `design.md`, and supply a `monerod` service behind its Service interface.
+		- Before any code here, the shared code moves out of `tt-minecraft-safeserver` into its own repo. That move is done from `tt-minecraft-safeserver`, as its item 2026111111303242.
+		- Settle each item under Need to sort out conflicts in `design.md`, here or in the shared design.
+	- Decisions:
+		- No copy of a shared part gets written here.
+		- Once `tt-safeserver` has its own repo, both tools keep it up and also fix it, but from one project at a time.
+
 - Config reader for shcl in Go
 	- ID: 2026111109365398
 	- Type: Task
@@ -30,10 +45,12 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Priority: High
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
+	- Prereq IDs: 2026111114120017
 	- Requirements:
 		- Read `config.shcl` from Go.
 	- Decisions:
 		- Config is shcl. The tool reads it with the latest published beta of shcl's Go module.
+		- Config loading comes from `tt-safeserver`. The keys and defaults stay here.
 
 - Core commands
 	- ID: 2026111109365411

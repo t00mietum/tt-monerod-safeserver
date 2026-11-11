@@ -36,6 +36,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 - [Plan](#plan)
 - [Architecture](#architecture)
 	- [Software stack](#software-stack)
+	- [Shared code](#shared-code)
 	- [Configuration model](#configuration-model)
 	- [Saves and persistence](#saves-and-persistence)
 	- [Privilege model](#privilege-model)
@@ -52,6 +53,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 	- [Security](#security)
 	- [Testing](#testing)
 - [Needs more thought](#needs-more-thought)
+	- [Need to sort out conflicts that emerged during design](#need-to-sort-out-conflicts-that-emerged-during-design)
 
 <!-- /TOC -->
 
@@ -236,32 +238,29 @@ Common:  --config PATH
 
 ~~~text
 go.mod
-source/cmd/tt-monerod/      main package, argument parsing
-source/internal/config/     config load and checks
-source/internal/host/       command runner, sudo, dry run
-source/internal/monerod/    monerod argument list
-source/internal/launch/     Docker and tmux modes
-source/internal/tree/       ownership hand-off
-source/internal/zfs/        snapshots and pruning
+source/cmd/tt-monerod/      main package, hands the service to tt-safeserver
+source/internal/service/    the Service interface for monerod
+source/internal/monerod/    argument list, process match, bitmonero.conf, ban list
 source/internal/tor/        service checks, onion address, torrc block
-source/internal/firewall/   nftables rules and their unit
+source/internal/firewall/   the nftables rules for monerod
 source/internal/rpc/        get_info over digest auth
 source/internal/fetch/      downloads over Tor, signature and hash checks
-source/internal/update/
-source/internal/repair/
-source/internal/boot/       systemd unit
+source/internal/update/     update --monerod and --tor
+source/internal/repair/     monerod checks and fixes
 nix/                        NixOS module and flake
 project/                    design, backlog, and notes
 cicd/                       build, test, and release scripts
 ~~~
 
+- The runner, config loading, the account, the ownership hand-off, ZFS, the launchers, the firewall unit, the boot unit, the `repair` runner, self-update, and the CLI come from `tt-safeserver`. See [Shared code](#shared-code).
+
 ### Logical code structure
 
-- Every outside command goes through one runner in `host`. The runner logs each command, adds sudo where a step asks for it, and prints instead of running under `--dry-run`. Tests replace it with a fake that records what would run.
+- Every outside command goes through one runner in `tt-safeserver`. The runner logs each command, adds sudo where a step asks for it, and prints instead of running under `--dry-run`. Tests replace it with a fake that records what would run.
 
 - `monerod` arguments are built once, as a list. The launcher only decides where the data dir is mounted.
 
-- `repair` is a list of checks. Each one has a test function and an optional fix function. `setup` reuses the fix functions.
+- `repair` is a list of checks. Each one has a test function and an optional fix function. `setup` reuses the fix functions. The shared checks come from `tt-safeserver`, and the `monerod` ones are added through the Service interface.
 
 ### Data flow
 
@@ -320,6 +319,12 @@ cicd/                       build, test, and release scripts
 
 - The config format is shcl, and the tool reads it with shcl's Go module.
 
+- Code that `tt-minecraft-safeserver` needs too comes from a shared Go module, `tt-safeserver`.
+	- Each tool keeps its own repo, binary, and releases. This one is `tt-monerod`, and the other is `tt-minecraftd`.
+	- Each tool supplies its own service behind one Service interface. The module runs the common commands.
+	- The module gets its own repo when this project starts on code, so 2 tools test the interface. Until then its code is written in `tt-minecraft-safeserver`, and its design is there too. After that both tools keep it up.
+	- It's GPL v2 or later, the same as both tools.
+
 - The firewall rules go in the tool's own nftables table, rather than in ufw, firewalld, or `nftables.conf`.
 	- A separate table works beside any of those, or none, and only the tool edits it.
 	- A drop in any table wins, so the tool's table can't open a port that another firewall keeps closed.
@@ -333,6 +338,8 @@ cicd/                       build, test, and release scripts
 ## Plan
 
 - The first release is `v1.0.0-alpha.1`.
+
+- The shared code moves to `tt-safeserver` before step 1.
 
 1. `start`, `stop`, `status`, and `watch`, with `--dry-run` and tests.
 
@@ -357,10 +364,42 @@ cicd/                       build, test, and release scripts
 - The tool is written in Go, and it uses the standard library wherever it can.
 
 - Expected outside modules:
+	- `tt-safeserver`, `github.com/t00mietum/tt-safeserver`. See [Shared code](#shared-code).
 	- An OpenPGP package, for the getmonero.org signature.
-	- The shcl Go module, `github.com/yottacore/shcl/source/go/v3`, at its latest published beta.
+	- The shcl Go module, `github.com/yottacore/shcl/source/go/v3`, at its latest published beta. It comes in through `tt-safeserver`.
 
 - At run time it calls `docker` or `tmux`, `sudo`, `systemctl`, and `ss`. It also calls `zfs` when snapshots are on, `nft` when the firewall is on, and `apt-get` for `update --tor` on Debian. `repair` calls `ufw` or `firewall-cmd` to read their rules, when one is active.
+
+### Shared code
+
+- The parts that `tt-minecraft-safeserver` needs too come from `tt-safeserver`. This tool supplies a `monerod` service behind its Service interface, and doesn't keep its own copy of any shared part.
+
+- From `tt-safeserver`:
+	- The command runner, with sudo, logging, and `--dry-run`.
+	- Config loading, through shcl. The keys and their defaults are set here.
+	- The service account and its group.
+	- The ownership hand-off. See [Tree ownership](#tree-ownership).
+	- ZFS snapshots and pruning.
+	- The Docker and native launchers.
+	- The nftables firewall unit, and writing and loading its rules file.
+	- The boot unit.
+	- The `repair` runner, and the checks both tools have, such as the account, ownership, the firewall unit, other firewalls, the image, the dataset, the boot unit, and a stray process.
+	- `update --self`, and pulling adn pinning the image for `update --image`.
+	- The CLI, with the common commands and options, `--help`, `--about`, and `--version`.
+
+- Stays here:
+	- The `monerod` argument list, and how to spot a running `monerod`.
+	- Tor, with the service checks, the onion addresses, and the marked `torrc` block.
+	- The firewall rules themselves, from `useTor`, `rpcAllowFrom`, and the bind addresses.
+	- `bitmonero.conf` and the RPC login.
+	- The ban list.
+	- The `status` lines from `get_info`, and the queued transaction warning.
+	- `update --monerod` with its signature check, `update --tor`, and the `monerod --version` check in `update --image`.
+	- The `repair` checks and `setup` steps for `exec/current`, `bitmonero.conf`, Tor, and the ban list.
+	- `--restart-tor`.
+	- The NixOS module.
+
+- Where this design and the shared one don't agree yet is listed under [Need to sort out conflicts that emerged during design](#need-to-sort-out-conflicts-that-emerged-during-design).
 
 ### Configuration model
 
@@ -606,3 +645,27 @@ cicd/                       build, test, and release scripts
 - Tool releases could be signed, beyond a SHA-256 sum.
 
 - `memCap` of 8 GB is a guess. LMDB's mapped pages count against the cap, so sync may slow down under it.
+
+### Need to sort out conflicts that emerged during design
+
+Where this design differs from the shared one in `tt-safeserver`. Each one gets settled in one place or the other before the code moves.
+
+- Native mode. Here it's a bare tmux session under the service account, limited by file modes only. The shared design runs tmux inside a transient systemd unit from `systemd-run`, with systemd's sandbox options, and its socket under `/run/`. That looks like a gain here too. Taking it changes [Run modes](#run-modes), [Why Docker](#why-docker), [Privilege model](#privilege-model), and [Security](#security).
+
+- Stopping. Here it's SIGTERM, then SIGKILL after `stopTimeout`. The shared design sends a console `stop` command first, then SIGTERM, then SIGKILL 30 seconds later, and has `stop --warn N`. The service needs a way to supply or skip that first step. `monerod` closes its database cleanly on SIGTERM.
+
+- Start check. Here `start` waits a few seconds and checks that `monerod` is still alive. The shared design waits for a log line that says the server is loaded, up to `startTimeout`. The service needs to supply its own test.
+
+- Container mounts. Here the data dir is mounted, and the release binaries read-only, with a small `/tmp`. The shared design mounts each tree in `ownerTrees` at its own path, with read-only files on top, an exec `/tmp`, and `-i -t` for the console. Mounting `<baseDir>` whole would make the binaries writable here, so the service needs to supply its mounts.
+
+- Downloads over Tor. With Tor on, every download here goes over Tor, `update --self` included. The shared self-update has no proxy, so it needs an HTTP client from the service. `update --image` pulls through the Docker daemon, which this tool doesn't give a proxy, so that one isn't covered yet in either design.
+
+- Firewall rules. Here the outbound drop is only on with Tor on, and loopback is allowed, since Tor's SOCKS port is there. The shared design drops loopback and the private ranges, and allows ports 80 and 443 with `egress` set to `web`. The rules come from the service either way, but the table layout, counters, and logging have to fit both. `status` there shows the drop counters, and could here too.
+
+- Snapshot names and pruning. Here they're `_pre_monerod-start` and `_post_monerod-stop`, keeping the last of 3 days, 2 weeks, and 2 months. The shared design names them after the binary, and keeps 7 days, 4 weeks, and 6 months. Either the schedule becomes a setting, or one schedule fits both.
+
+- `repair` order. Here the `monerod` checks sit between the shared ones, such as `exec/current` at 5 and the ban list at 13. The shared runner needs to say where service checks go. The dataset check here also wants it mounted at `<baseDir>`.
+
+- The shcl version. Here it's the latest published beta. The shared design says the latest published release, beta or not. Both are `v3.0.0-beta1` today, but one module pins one version for both.
+
+- The CLI. `start --restart-tor` is only here, and `stop --warn`, `console`, and `cmd` are only there. The shared CLI needs to take flags and commands from the service.
