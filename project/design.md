@@ -512,7 +512,7 @@ cicd/                       build, test, and release scripts
 - With `firewall` on, the tool keeps its rules in its own nftables table, `inet tt_monerodctl`, so they cover IPv4 and IPv6.
 
 - `setup` and `repair` write the rules to `/etc/tt-monerodctl/firewall.nft`, from the config. `tt-monerodctl-firewall.service` loads that file at boot.
-	- It loads it again whenever `nftables.service` starts, stops, or reloads. Debian's `nftables.conf` flushes every table, the tool's included.
+	- It loads it again whenever `nftables.service` starts, restarts, or reloads. Debian's `nftables.conf` flushes every table, the tool's included.
 	- The file deletes the old table and adds the new one in a single nft transaction, so there's no gap without rules.
 
 - Outbound, with `useTor` on:
@@ -598,6 +598,8 @@ cicd/                       build, test, and release scripts
 - With the firewall on, a connection from the service account to a LAN address fails and bumps the drop counter. A wallet in `rpcAllowFrom` still syncs.
 
 ## Needs more thought
+
+- Stopping `nftables.service` flushes every table, the tool's included, and nothing puts it back until the next start. `monerod` keeps running without its rules in the meantime.
 
 - Tool releases could be signed, beyond a SHA-256 sum.
 
