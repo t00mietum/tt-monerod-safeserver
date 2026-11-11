@@ -40,7 +40,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 	- [Configuration model](#configuration-model)
 	- [Saves and persistence](#saves-and-persistence)
 	- [Privilege model](#privilege-model)
-	- [Why Docker](#why-docker)
+	- [Why a container](#why-a-container)
 	- [Run modes](#run-modes)
 	- [Tree ownership](#tree-ownership)
 	- [Tor](#tor)
@@ -61,7 +61,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 
 - `tt-monerod-safeserver` runs a Monero node on Linux as a dedicated, unprivileged account. It starts and stops `monerod`, shows its status, sets it up from scratch, updates it, and repairs a broken install.
 
-- `monerod` runs inside a locked-down Docker container by default. Without Docker it runs in a detached tmux session, under the same account.
+- `monerod` runs inside a locked-down container by default, under Podman or Docker. Without a container, such as in a dedicated VM, it runs in a detached tmux session, under the same account.
 
 - The defaults favor privacy over sync speed. All p2p traffic goes over Tor, inbound connections only come in over a Tor onion service, and the RPC is restricted.
 
@@ -79,7 +79,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 	- Run `monerod` as an account that isn't used for anything else, and doesn't have sudo.
 	- Keep root work to the few steps that need it, and do it in the foreground.
 	- Hand the data tree to the service account before a start, and back to the operator after a stop.
-	- Build one static binary that doesn't need anything at run time beyond Docker or tmux, Tor, and sudo.
+	- Build one static binary that doesn't need anything at run time beyond Podman, Docker, or tmux, plus Tor and sudo.
 	- Keep it generic, so the code doesn't have anything in it about one particular host.
 	- Allow local network wallets (e.g. Feather) to securely connect, sync, and send/receive txs.
 	- Supported platforms: Debian, NixOS.
@@ -96,7 +96,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 
 - On NixOS, the system parts are declared in a NixOS module, rather than changed by `setup`. See [NixOS](#nixos).
 
-- The operator has sudo, and is in the `docker` group for Docker mode.
+- The operator has sudo. Container mode needs Podman or Docker, but not the `docker` group.
 
 - Tor runs as a system service with a SOCKS port on localhost.
 
@@ -179,14 +179,14 @@ Common:  --config PATH
 	5. Writes `bitmonero.conf` with a random RPC login, and prints the login once. The password is 32 letters and digits only, since Feather takes the login as part of the node address.
 	6. Installs Tor through apt when it's missing, adds a marked block to `torrc` for the onion services, and restarts Tor.
 	7. With `firewall` on, installs nftables through apt when `nft` is missing, writes the rules, and starts their unit. See [Firewall](#firewall).
-	8. Pulls the pinned container image in Docker mode.
+	8. Pulls the pinned container image in container mode.
 	9. Installs and enables the boot unit when `startAtBoot` is on.
 	10. Copies itself to `/usr/local/bin` when it runs from somewhere else.
 	11. Ends with `repair --check`.
 
 - When it finds an install already, it runs `repair` and then `update`.
 
-- It never installs Docker. Without Docker, it offers native mode.
+- It sets `runMode` to `podman` when Podman is installed, and to `docker` when only Docker is. With neither, it offers to install Podman and `catatonit` through apt, or to use native mode. It never installs Docker.
 
 - On NixOS it skips steps 2, 6, 7, 9, and 10. It checks those parts instead, and prints the module settings for whatever is missing.
 
@@ -205,7 +205,7 @@ Common:  --config PATH
 
 - On NixOS, `--self` and `--tor` only print what to change, since both come from the Nix store. `nixos-rebuild` does the rest.
 
-- `--image` pulls the newest container base image, checks that `monerod --version` works in it, and pins its digest in the config.
+- `--image` pulls the newest container base image through the configured runtime, checks that `monerod --version` works in it, and pins its digest in the config.
 
 - With Tor on, all downloads go over Tor.
 
@@ -226,7 +226,7 @@ Common:  --config PATH
 	8. With Tor on, Tor runs, its SOCKS port listens, the marked `torrc` block matches the config, and the onion addresses exist.
 	9. With `firewall` on, the rules file matches the config, its unit is enabled, and the table is loaded. With it off, the unit and the table get removed.
 	10. When ufw or firewalld is active, it lets each `rpcAllowFrom` address reach the RPC port. A missing rule is reported with the command that adds it, and never added.
-	11. In Docker mode, the image is there, and an old stopped container gets removed.
+	11. In container mode, the image is there, and an old stopped container gets removed. A container with this tool's label in the other runtime is reported.
 	12. With a dataset configured, it exists and is mounted at the base dir.
 	13. The ban list exists.
 	14. The boot unit is installed and enabled only when `startAtBoot` is on.
@@ -281,15 +281,32 @@ cicd/                       build, test, and release scripts
 	- PowerShell isn't installed on most Linux servers.
 	- Go builds one static binary, and its standard library has nearly all of that. It's also easy to test.
 
-- Docker mode is the default, and native tmux mode is the fallback.
-	- `monerod` parses traffic from strangers. In a container it can only see its binaries and its data dir. [Why Docker](#why-docker) has more.
-	- Native mode is a small amount of extra code, and it lets the tool work where Docker isn't installed.
+- There are 3 run modes: Podman, Docker, and native tmux. A container is the default.
+	- `monerod` parses traffic from strangers. In a container it can only see its binaries and its data dir. [Why a container](#why-a-container) has more.
+	- Native mode is for a dedicated VM, where the VM already keeps `monerod` away from everything else, or a host without either runtime. It's a small amount of extra code.
+
+- Podman is preferred over Docker, and both are supported.
+	- Podman has no daemon running as root all the time.
+	- It's in Debian main and in NixOS, with security updates from the distro, so `setup` can install it the way it installs Tor.
+	- It pulls images in its own process, rather than through a daemon, so the pull should be able to go over Tor. That still needs a test.
+	- Docker is there because many hosts already have it. The flags are the same for both.
+
+- Both runtimes run as root through sudo, rather than rootless or through the `docker` group.
+	- The `docker` group is as good as root on that host, with no password. Sudo asks for one and logs it.
+	- `start` already needs sudo for the ownership hand-off, so it doesn't add a prompt.
+	- The uids in the container are the host's own, so the ownership hand-off and the firewall's uid match work unchanged. Rootless Podman would map them to a range of other uids.
+
+- Tor runs on the host as a system service, not in a container.
+	- In the same container as `monerod`, a bug that lets a peer run code could read the onion service's secret key and take over the onion address.
+	- Debian's `tor` package gets security fixes through apt. In an image, a fix waits for a rebuild and a new digest.
+	- The tool itself downloads over Tor, sometimes before any container exists.
+	- Restarting `monerod` would also restart Tor, and Tor would have to rebuild its circuits and republish the onion service.
 
 - The container runs a stock Debian slim image that's pinned by its digest. The release binaries are mounted into it read-only.
 	- A custom image would need its own build and update path. With the binaries mounted, a `monerod` update stays a file copy.
 
 - The container uses host networking.
-	- Tor, the onion service forward, and an RPC that's bound to a LAN address all work without changes. Docker doesn't add firewall rules for a host-network container.
+	- Tor, the onion service forward, and an RPC that's bound to a LAN address all work without changes. Neither runtime adds firewall rules for a host-network container.
 
 - The operator gets sudo for single commands, rather than running the whole tool as root.
 	- Downloads, parsing, and status code then never run as root during start and stop.
@@ -301,7 +318,7 @@ cicd/                       build, test, and release scripts
 	- `monerod` advertises its onion address only for that zone, so hardly any peers would use a second onion port for the clearnet zone. It would also mix the 2 zones. [monerod-options.md](monerod-options.md) has the details.
 
 - The RPC login is in `bitmonero.conf`, rather than on the command line.
-	- Anything on the command line shows in `ps` and `docker inspect`.
+	- Anything on the command line shows in `ps` and in the runtime's `inspect`.
 
 - A LAN wallet uses the node's LAN address by default, rather than an onion address.
 	- Feather sends traffic for local addresses directly, never over Tor, and wallet sync over Tor is slow.
@@ -310,7 +327,7 @@ cicd/                       build, test, and release scripts
 - Start at boot uses a systemd unit that runs `tt-monerod start --foreground` as root, rather than a unit that runs `monerod` directly.
 	- The ownership hand-off, snapshots, and Tor checks then work the same way at boot as by hand.
 
-- On NixOS, a NixOS module declares the account, the onion services, Docker, the config file, and the boot unit.
+- On NixOS, a NixOS module declares the account, the onion services, Podman or Docker, the config file, and the boot unit.
 	- `/etc` and the Nix store are managed by Nix, so `setup` and `repair` can't change them there.
 	- NixOS's own `services.monero` module was looked at. It runs `monerod` directly, without the container, the ownership hand-off, or the Tor setup.
 
@@ -368,7 +385,7 @@ cicd/                       build, test, and release scripts
 	- An OpenPGP package, for the getmonero.org signature.
 	- The shcl Go module, `github.com/yottacore/shcl/source/go/v3`, at its latest published beta. It comes in through `tt-safeserver`.
 
-- At run time it calls `docker` or `tmux`, `sudo`, `systemctl`, and `ss`. It also calls `zfs` when snapshots are on, `nft` when the firewall is on, and `apt-get` for `update --tor` on Debian. `repair` calls `ufw` or `firewall-cmd` to read their rules, when one is active.
+- At run time it calls `podman`, `docker`, or `tmux`, plus `sudo`, `systemctl`, and `ss`. It also calls `zfs` when snapshots are on, `nft` when the firewall is on, and `apt-get` for `update --tor` on Debian. `repair` calls `ufw` or `firewall-cmd` to read their rules, when one is active.
 
 ### Shared code
 
@@ -380,11 +397,11 @@ cicd/                       build, test, and release scripts
 	- The service account and its group.
 	- The ownership hand-off. See [Tree ownership](#tree-ownership).
 	- ZFS snapshots and pruning.
-	- The Docker and native launchers.
+	- The Podman, Docker, and native launchers.
 	- The nftables firewall unit, and writing and loading its rules file.
 	- The boot unit.
 	- The `repair` runner, and the checks both tools have, such as the account, ownership, the firewall unit, other firewalls, the image, the dataset, the boot unit, and a stray process.
-	- `update --self`, and pulling adn pinning the image for `update --image`.
+	- `update --self`, and pulling and pinning the image for `update --image`.
 	- The CLI, with the common commands and options, `--help`, `--about`, and `--version`.
 
 - Stays here:
@@ -411,7 +428,7 @@ cicd/                       build, test, and release scripts
 
 | Key                | Default                       | Notes
 | :---               | :---                          | :---
-| `runMode`          | `docker`                      | `docker` or `native`
+| `runMode`          | `podman`                      | `podman`, `docker`, or `native`. `setup` picks one
 | `runUser`          | `monerod`
 | `runGroup`         | same as `runUser`             | Stays the group before and after a run
 | `ownerAfterStop`   | the operator                  | From `SUDO_USER`, else `USER`
@@ -420,7 +437,7 @@ cicd/                       build, test, and release scripts
 | `dataDir`          | `<baseDir>/data`
 | `ownerTrees`       | `[<baseDir>]`                 | Every tree that changes hands
 | `zfsDataset`       | none                          | No snapshots when unset
-| `dockerImage`      | Debian trixie slim, by digest | `update --image` changes it
+| `image`            | Debian trixie slim, by digest | `update --image` changes it
 | `memCap`           | `8g`                          | Swap is capped the same, so it stays at 0
 | `nice`             | `10`
 | `maxConcurrency`   | `2`
@@ -449,7 +466,7 @@ cicd/                       build, test, and release scripts
 
 ### Saves and persistence
 
-- The tool doesn't store any state of its own. Whether `monerod` runs comes from the process table and Docker. Ownership comes from the files.
+- The tool doesn't store any state of its own. Whether `monerod` runs comes from the process table and the container runtimes. Ownership comes from the files.
 
 - Data tree layout:
 
@@ -473,7 +490,7 @@ cicd/                       build, test, and release scripts
 | Restart Tor, with `--restart-tor` only  | operator through sudo
 | ZFS snapshot and prune                  | operator through `zfs allow`, else sudo
 | Change tree ownership                   | operator through sudo
-| `docker run` and `docker stop`          | operator, in the `docker` group
+| Container run, stop, and pull           | operator through sudo
 | `sudo -u <runUser> tmux` in native mode | operator through sudo
 | `setup`, `update`, and `repair`         | root
 | `start --foreground` from the boot unit | root, from systemd
@@ -483,7 +500,7 @@ cicd/                       build, test, and release scripts
 
 - The service account never runs `tt-monerod`, so that way it doesn't need to read the binary.
 
-### Why Docker
+### Why a container
 
 - `monerod` reads data from strangers all day. Every peer sends it blocks, transactions, and handshakes, and `monerod` has had bugs before that let a peer crash it from the network. A worse bug could let a peer run code as the service account.
 
@@ -493,32 +510,38 @@ cicd/                       build, test, and release scripts
 	- Run any program that's installed on the host.
 	- Use as much memory and as many processes as the kernel allows.
 
-- In Docker mode the container takes most of that away:
+- A container takes most of that away, under Podman or Docker:
 	- It sees the image's files and the release binaries, both read-only, and the data dir. The rest of the host's files aren't mounted.
 	- It has its own process list, so it can't see or signal host processes.
 	- `--cap-drop ALL` and `no-new-privileges` mean a setuid program in the image can't give it root.
-	- The pid limit and the memory cap stop a runaway `monerod` from using up the host's processes or memory. When memory runs out anyway, `--oom-score-adj 1000` has the the kernel kill `monerod` before the desktop or other services.
+	- The pid limit and the memory cap stop a runaway `monerod` from using up the host's processes or memory. When memory runs out anyway, `--oom-score-adj 1000` has the kernel kill `monerod` before the desktop or other services.
 
 - It helps day to day, too:
 	- The image is pinned by its digest, so every start uses the same files whatever the host has installed. The release binaries only need libc, libm, and libpthread from it.
-	- A stopped container keeps its output, so `docker logs` shows why `monerod` died.
-	- `docker stop` sends SIGTERM and waits for `stopTimeout`, and `--init` passes the signal on to `monerod`.
+	- A stopped container keeps its output, so the runtime's `logs` shows why `monerod` died.
+	- The runtime's `stop` sends SIGTERM and waits for `stopTimeout`, and `--init` passes the signal on to `monerod`.
 
 - What it doesn't do:
 	- With host networking, `monerod` can still connect to any port on localhost and on the LAN. Keeping p2p on Tor is up to the `monerod` options. With Tor on, the [Firewall](#firewall) rules block the LAN and the internet, but not localhost.
 	- The container shares the host's kernel, so a kernel bug could still let code out. It's less isolation than a VM.
-	- Being in the `docker` group is as good as root on that host. The operator has sudo already, so that doesn't add a new risk.
+	- The runtime runs as root, through sudo. A bug in the runtime itself is a root bug.
 
-- Native mode is for hosts without Docker. There, `monerod` is limited by file modes only.
+- In native mode, `monerod` is limited by file modes only. That's enough in a dedicated VM, where nothing else is there to protect.
 
 ### Run modes
 
-- Docker mode runs the container under the service account's uid and gid, with:
+- Container mode runs `podman` or `docker` through sudo, and the container under the service account's uid and gid. Both get the same flags:
 	- `--read-only`, a small tmpfs on `/tmp`, `--cap-drop ALL`, and `no-new-privileges`.
 	- A pid limit, the memory cap, and `--oom-score-adj 1000`, so the desktop isn't what gets killed when memory runs out.
 	- `--init`, so SIGTERM gets passed to `monerod` and child processes get reaped.
 	- `nice` and `umask 0007` set inside, before `monerod` starts.
-	- No `--rm`, so `docker logs` still works after a crash. `start` removes the old container, and only one with this tool's label.
+	- No `--rm`, so the runtime's `logs` still works after a crash. `start` removes the old container, and only one with this tool's label.
+
+- `stop` and `repair` look for the tool's label in both runtimes. A container started before a `runMode` change still gets found.
+
+- Podman's `--init` needs `catatonit`, so `setup` installs it with Podman and `repair` checks for it.
+
+- `status` doesn't use sudo, so it tells the modes apart from the process table, by `monerod`'s parent process.
 
 - Native mode runs `monerod` in the service account's own tmux server, on a named socket. It never uses the operator's tmux server.
 	- The account's shell is `nologin`, so the tool sets `SHELL=/bin/sh` for tmux.
@@ -558,7 +581,7 @@ cicd/                       build, test, and release scripts
 	- A new connection from the service account to anything but loopback gets dropped and counted. A rate-limited log line names the address.
 	- Replies to connections that came in, such as a LAN wallet's RPC traffic, still go out.
 	- Tor runs as its own account, so its traffic isn't touched.
-	- It works the same in both modes, since a host-network container's sockets belong to the service account's uid.
+	- It works the same in every mode, since a host-network container's sockets belong to the service account's uid.
 
 - Inbound, new connections from anywhere but loopback get dropped:
 	- On the RPC port, unless they come from an address in `rpcAllowFrom`.
@@ -580,7 +603,7 @@ cicd/                       build, test, and release scripts
 - With `startAtBoot` on, `setup` and `repair` install `tt-monerod.service` and enable it.
 	- `ExecStart` runs `tt-monerod start --foreground`, and `ExecStop` runs `tt-monerod stop`.
 	- `TimeoutStopSec` is a little longer than `stopTimeout`, so systemd doesn't kill `monerod` first.
-	- It starts after `network-online.target`, `tor.service`, and `docker.service` when those are used.
+	- It starts after `network-online.target`, and after `tor.service` when Tor is on. In Docker mode it also waits for `docker.service`. Podman has no service to wait for.
 	- With `firewall` on, it requires `tt-monerod-firewall.service`, so `monerod` never starts at boot without the rules.
 
 - With `startAtBoot` off, `repair` disables and removes the unit.
@@ -590,7 +613,7 @@ cicd/                       build, test, and release scripts
 - The repo has a flake with a NixOS module. It declares:
 	- The service account and group.
 	- Tor, with the p2p onion service and the optional RPC onion service.
-	- Docker, in Docker mode.
+	- Podman or Docker, in container mode.
 	- `/etc/tt-monerod/config.shcl`, written from module options.
 	- The firewall unit and its rules.
 	- The boot unit.
@@ -616,7 +639,7 @@ cicd/                       build, test, and release scripts
 
 - The service account doesn't have sudo, a login shell, a home, or any other groups.
 
-- In Docker mode `monerod` can't see anything outside its binaries and data. In native mode it's limited by file modes only.
+- In container mode `monerod` can't see anything outside its binaries and data. In native mode it's limited by file modes only.
 
 - The config doesn't have any secrets in it. The RPC login is in `bitmonero.conf`, with mode 0660.
 
@@ -632,7 +655,7 @@ cicd/                       build, test, and release scripts
 
 - Unit tests run with the fake command runner. They check the exact command lists for each mode, with Tor on and off, and the config errors. They also check the rendered `firewall.nft` for each mix of `useTor`, `rpcAllowFrom`, and bind addresses.
 
-- A smoke test runs `monerod --offline` in the container against an empty data dir. It checks the hardening flags, the log, and a clean exit on `docker stop`.
+- A smoke test runs `monerod --offline` in a container against an empty data dir, once under each runtime. It checks the hardening flags, the log, and a clean exit on the runtime's `stop`.
 
 - A live start and stop on a real node checks ownership, listening ports, and that every outbound connection goes to the Tor SOCKS port.
 
@@ -646,11 +669,15 @@ cicd/                       build, test, and release scripts
 
 - `memCap` of 8 GB is a guess. LMDB's mapped pages count against the cap, so sync may slow down under it.
 
+- Rootless Podman. Code that got out of the container would land as an unused uid, not the service account. It needs subuid ranges, linger, and cgroup delegation for a `nologin` account, and its uid mapping changes [Tree ownership](#tree-ownership) and the firewall's uid match.
+
+- Tor in its own container, beside `monerod`'s. `monerod` could then sit on a network whose only way out is Tor, which would do the firewall's job in container mode. A LAN wallet would need a relay to reach the RPC, since an internal network can't publish ports.
+
 ### Need to sort out conflicts that emerged during design
 
 Where this design differs from the shared one in `tt-safeserver`. Each one gets settled in one place or the other before the code moves.
 
-- Native mode. Here it's a bare tmux session under the service account, limited by file modes only. The shared design runs tmux inside a transient systemd unit from `systemd-run`, with systemd's sandbox options, and its socket under `/run/`. That looks like a gain here too. Taking it changes [Run modes](#run-modes), [Why Docker](#why-docker), [Privilege model](#privilege-model), and [Security](#security).
+- Native mode. Here it's a bare tmux session under the service account, limited by file modes only. The shared design runs tmux inside a transient systemd unit from `systemd-run`, with systemd's sandbox options, and its socket under `/run/`. That looks like a gain here too. Taking it changes [Run modes](#run-modes), [Why a container](#why-a-container), [Privilege model](#privilege-model), and [Security](#security).
 
 - Stopping. Here it's SIGTERM, then SIGKILL after `stopTimeout`. The shared design sends a console `stop` command first, then SIGTERM, then SIGKILL 30 seconds later, and has `stop --warn N`. The service needs a way to supply or skip that first step. `monerod` closes its database cleanly on SIGTERM.
 
@@ -658,7 +685,7 @@ Where this design differs from the shared one in `tt-safeserver`. Each one gets 
 
 - Container mounts. Here the data dir is mounted, and the release binaries read-only, with a small `/tmp`. The shared design mounts each tree in `ownerTrees` at its own path, with read-only files on top, an exec `/tmp`, and `-i -t` for the console. Mounting `<baseDir>` whole would make the binaries writable here, so the service needs to supply its mounts.
 
-- Downloads over Tor. With Tor on, every download here goes over Tor, `update --self` included. The shared self-update has no proxy, so it needs an HTTP client from the service. `update --image` pulls through the Docker daemon, which this tool doesn't give a proxy, so that one isn't covered yet in either design.
+- Downloads over Tor. With Tor on, every download here goes over Tor, `update --self` included. The shared self-update has no proxy, so it needs an HTTP client from the service. For `update --image`, Podman pulls in its own process and should take Tor's SOCKS address through `HTTPS_PROXY`, which still needs a test. Docker pulls through its daemon, which this tool doesn't give a proxy, so Docker mode isn't covered yet in either design.
 
 - Firewall rules. Here the outbound drop is only on with Tor on, and loopback is allowed, since Tor's SOCKS port is there. The shared design drops loopback and the private ranges, and allows ports 80 and 443 with `egress` set to `web`. The rules come from the service either way, but the table layout, counters, and logging have to fit both. `status` there shows the drop counters, and could here too.
 

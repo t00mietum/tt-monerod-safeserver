@@ -62,7 +62,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Prereq IDs: 2026111109365398
 	- Requirements:
 		- `start`, `stop`, `status`, and `watch`, per `design.md`.
-		- Docker mode is the default, and native tmux mode is the fallback.
+		- Podman, Docker, and native tmux modes. A container is the default, and Podman is preferred.
 		- `--dry-run` and `--debug`.
 		- `--help`, `--about`, and `--version`.
 		- Hand the tree to the service account on start, and back on stop.
@@ -176,7 +176,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365438
 	- Requirements:
-		- Add a flake with a NixOS module for the account, Tor, Docker, the config file, and the boot unit.
+		- Add a flake with a NixOS module for the account, Tor, Podman or Docker, the config file, and the boot unit.
 		- On NixOS, `setup`, `repair`, and `update` check the system parts and print module settings, rather than change them.
 
 - CI/CD pipeline

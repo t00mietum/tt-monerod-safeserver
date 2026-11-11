@@ -101,11 +101,11 @@ This doc lists the `monerod` options that `tt-monerod` passes and why, plus the 
 
 | Option                               | Why not
 | :---                                 | :---
-| `--rpc-login`                        | It would show in `ps` and `docker inspect`. It goes in `bitmonero.conf` instead.
+| `--rpc-login`                        | It would show in `ps` and in the container runtime's `inspect`. It goes in `bitmonero.conf` instead.
 | `--rpc-payment-allow-free-loopback`  | Does nothing unless `--rpc-payment-address` is set.
 | `--public-node`                      | Advertises the RPC to everyone.
 | `--enable-dns-blocklist`             | DNS lookups outside Tor. `--ban-list` does the same job.
-| `--detach`                           | Docker or tmux handles that.
+| `--detach`                           | The container runtime or tmux handles that.
 | `--p2p-use-ipv6`                     | Off by default, and it's left off.
 | `--no-gd`                            | Only connects to whitelisted peers. It slows sync, and it can hide the node from Tor peers.
 | `--add-exclusive-node` with an onion | With only onion peers, the node can't sync blocks, per `ANONYMITY_NETWORKS.md`.
