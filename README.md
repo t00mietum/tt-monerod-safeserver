@@ -42,20 +42,20 @@
 -->
 
 <!-- TOC ignore:true -->
-# tt-monerodctl
+# tt-monerod-safeserver
 
 <!--
 <table style="border: none; border-collapse: collapse;">
 	<tr style="border: none; border-collapse: collapse;">
 		<td style="border: none; border-collapse: collapse;"><img src="assets/logo.png" alt="Logo" width="320"/></td>
-		<td style="border: none;">tt-monerodctl runs a private Monero node under its own unprivileged account, in a locked-down container, and sends all of its traffic over Tor.</td>
+		<td style="border: none;">tt-monerod-safeserver runs a private Monero node under its own unprivileged account, in a locked-down container, and sends all of its traffic over Tor.</td>
 	</tr>
 </table>
 
 <p align="center"><img src="assets/logo.png" alt="" width="128"></p>
 -->
 
-tt-monerodctl runs a private Monero node under its own unprivileged account, in a locked-down container, and sends all of its traffic over Tor.
+tt-monerod-safeserver runs a private Monero node under its own unprivileged account, in a locked-down container, and sends all of its traffic over Tor.
 
 <!-- TOC ignore:true -->
 ## Table of contents
@@ -84,7 +84,7 @@ tt-monerodctl runs a private Monero node under its own unprivileged account, in 
 > Licensed under the [GNU General Public License v2.0 or later](https://spdx.org/licenses/GPL-2.0-or-later.html)<br />
 > SPDX-License-Identifier: `GPL-2.0-or-later` <br />
 > No warranty.<br />
-> tt-monerodctl™ is a [trademark](trademark.md) of t00mietum.
+> tt-monerod-safeserver™ is a [trademark](trademark.md) of t00mietum.
 <!--
 > Licensed under the [MIT License](https://mit-license.org/)<br />
 > SPDX-License-Identifier: `MIT`.<br />

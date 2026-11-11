@@ -57,7 +57,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 
 ## Summary
 
-- `tt-monerodctl` runs a Monero node on Linux as a dedicated, unprivileged account. It starts and stops `monerod`, shows its status, sets it up from scratch, updates it, and repairs a broken install.
+- `tt-monerod-safeserver` runs a Monero node on Linux as a dedicated, unprivileged account. It starts and stops `monerod`, shows its status, sets it up from scratch, updates it, and repairs a broken install.
 
 - `monerod` runs inside a locked-down Docker container by default. Without Docker it runs in a detached tmux session, under the same account.
 
@@ -194,7 +194,7 @@ Common:  --config PATH
 
 - Needs root, and asks first unless `--yes` is given. When a part isn't named, it updates all 4 parts.
 
-- `--self` gets the latest `tt-monerodctl` release from GitHub, checks its SHA-256 sum, and replaces the running binary in one rename.
+- `--self` gets the latest `tt-monerod-safeserver` release from GitHub, checks its SHA-256 sum, and replaces the running binary in one rename.
 
 - `--monerod` downloads the signed hash list from getmonero.org, and checks its signature with a release key built into the binary. It downloads the newest Linux build for this CPU, checks it against the list, extracts it beside the old versions, and points `exec/current` at it. The last 2 versions stay on disk.
 	- A running `monerod` is left alone. It uses the new version on its next start.

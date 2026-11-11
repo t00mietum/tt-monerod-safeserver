@@ -12,11 +12,11 @@ That said, asking is free - and we'd prefer to say yes. Forks that credibly carr
 
 ## 1. Marks covered
 
-"tt-monerodctl", the tt-monerodctl logo, and any stylized variants (the "Marks") are trademarks of t00mietum (CryptogID: ปʬϝღถɔ4რఠΔթะ9ƾǝu). We claim these Marks under common law and use them in commerce as tt-monerodctl™.
+"tt-monerod-safeserver", the tt-monerod-safeserver logo, and any stylized variants (the "Marks") are trademarks of t00mietum (CryptogID: ปʬϝღถɔ4რఠΔթะ9ƾǝu). We claim these Marks under common law and use them in commerce as tt-monerod-safeserver™.
 
 ## 2. Relationship to the software license
 
-tt-monerodctl is distributed under the GNU General Public License v2.0 or later. That license grants rights in **copyright** only. It does not grant, and must not be read as granting, any license or right to use the Marks. Trademark rights are expressly reserved.
+tt-monerod-safeserver is distributed under the GNU General Public License v2.0 or later. That license grants rights in **copyright** only. It does not grant, and must not be read as granting, any license or right to use the Marks. Trademark rights are expressly reserved.
 
 ## 3. Uses that are always permitted
 
@@ -24,7 +24,7 @@ No permission from us is needed to:
 
 - Use the Marks in plain text to refer accurately to this project - in documentation, articles, reviews, talks, comparisons, or academic work.
 
-- State factually that your product works with, is built on, is compatible with, or is derived from tt-monerodctl (e.g. "Foo, a tt-monerodctl fork", "powered by tt-monerodctl"), provided the statement is true and your own name is the prominent one.
+- State factually that your product works with, is built on, is compatible with, or is derived from tt-monerod-safeserver (e.g. "Foo, a tt-monerod-safeserver fork", "powered by tt-monerod-safeserver"), provided the statement is true and your own name is the prominent one.
 
 - Redistribute unmodified official builds under the project name.
 
@@ -34,7 +34,7 @@ No permission from us is needed to:
 
 ## 4. Uses that require written permission
 
-- Naming your product, service, company, or app the same as, or confusingly similar to, the Marks - including as a prefix, suffix, or misspelling (e.g. "tt-monerodctl Pro", "tt-monerodctl Cloud", "tt-monerodctlify").
+- Naming your product, service, company, or app the same as, or confusingly similar to, the Marks - including as a prefix, suffix, or misspelling (e.g. "tt-monerod-safeserver Pro", "tt-monerod-safeserver Cloud", "tt-monerod-safeserverify").
 
 - Using the Marks in a domain name, social media handle, or app store listing title.
 
@@ -46,7 +46,7 @@ No permission from us is needed to:
 
 ## 5. Modified versions
 
-If you distribute a modified version, you must remove or replace the Marks in the name, logo, and user-facing branding. You may - and we encourage you to - state plainly that your version is derived from tt-monerodctl. Do not use the Marks in a way that could lead users to attribute your changes to us.
+If you distribute a modified version, you must remove or replace the Marks in the name, logo, and user-facing branding. You may - and we encourage you to - state plainly that your version is derived from tt-monerod-safeserver. Do not use the Marks in a way that could lead users to attribute your changes to us.
 
 ## 6. Usage requirements
 
@@ -56,11 +56,11 @@ When using the Marks under Section 3:
 
 - Do not alter the logo's colors, proportions, or elements.
 
-- Include an attribution such as: "tt-monerodctl is a trademark of t00mietum."
+- Include an attribution such as: "tt-monerod-safeserver is a trademark of t00mietum."
 
 ## 7. Enforcement and changes
 
-**We may revoke permission for any use that damages the Marks or misleads users**. We may revise this policy at any time; the current version lives at <https://github.com/t00mietum/tt-monerodctl/blob/main/trademark.md>. Requests for permission, and reports of misuse, go to tt-monerodctlⒶyottacore.com.
+**We may revoke permission for any use that damages the Marks or misleads users**. We may revise this policy at any time; the current version lives at <https://github.com/t00mietum/tt-monerod-safeserver/blob/main/trademark.md>. Requests for permission, and reports of misuse, go to tt-monerod-safeserverⒶyottacore.com.
 
 ---
 
