@@ -61,6 +61,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Requirements:
 		- Run the checks listed in `design.md`, each with an optional fix.
 		- `--check` only reports.
+		- Check the firewall table and its unit, and fix them. Check that ufw or firewalld lets the `rpcAllowFrom` hosts in, and print the command when it doesn't.
 
 - setup
 	- ID: 2026111109365438
@@ -72,8 +73,26 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Prereq IDs: 2026111109365424
 	- Requirements:
 		- Install from scratch, per `design.md`.
-		- Make the RPC password from letters and digits only, since Feather takes the login as part of the node address.
+		- Make the RPC password from 32 letters and digits only, since Feather takes the login as part of the node address.
+		- Install nftables when it's missing, write the firewall rules, and start their unit.
 		- On an existing install, run `repair` and then `update`.
+
+- Firewall
+	- ID: 2026111110391351
+	- Type: Feature
+	- Status: Queued
+	- Priority: High
+	- Opened: 2026-11-11
+	- Opened by: t00mietum
+	- Prereq IDs: 2026111109365411
+	- Requirements:
+		- Keep the tool's rules in its own nftables table, loaded by its own systemd unit, per `design.md`.
+		- With Tor on, drop new outbound connections from the service account that aren't to loopback.
+		- Drop inbound connections to the RPC port from anywhere but loopback and `rpcAllowFrom`.
+		- `start` refuses to run when the table isn't loaded.
+		- `setup` and `repair` manage it. They never change ufw or firewalld rules.
+	- Decisions:
+		- fail2ban was looked at and left out, per `design.md`. The firewall already limits the RPC on a LAN address, and over Tor every wallet comes from localhost.
 
 - update
 	- ID: 2026111109365451

@@ -38,15 +38,17 @@ This doc explains how to point a wallet at the node, from the same host, from an
 
 ## Node settings
 
-| Wallet runs on   | `rpcBindIP`            | `rpcOnion`
-| :---             | :---                   | :---
-| The same host    | `127.0.0.1`            | `false`
-| Another LAN host | the node's LAN address | `false`
-| Anywhere         | either of the above    | `true`
+| Wallet runs on   | `rpcBindIP`            | `rpcAllowFrom`          | `rpcOnion`
+| :---             | :---                   | :---                    | :---
+| The same host    | `127.0.0.1`            | none                    | `false`
+| Another LAN host | the node's LAN address | the wallet's address    | `false`
+| Anywhere         | either of the above    | as above                | `true`
 
 - After a change, run `tt-monerodctl repair` and restart the node.
 
-- On a LAN address, only the wallet's host should be able to reach the RPC port. RPC traffic on the LAN isn't encrypted. With ufw, for example:
+- On a LAN address, only the wallet's host should be able to reach the RPC port, since RPC traffic on the LAN isn't encrypted. With `firewall` on, the tool's own rules drop RPC connections from any address that isn't in `rpcAllowFrom`.
+
+- When ufw or firewalld is active, it also has to let the wallet's host in. `tt-monerodctl repair` prints the command when that rule is missing. With ufw, for example:
 
 	~~~bash
 	sudo ufw allow from 192.168.1.50 to any port 18081 proto tcp
@@ -101,7 +103,7 @@ Add the node under Settings, Network, Node. Turn off "Let Feather manage this li
 - Feather won't connect:
 	- `tt-monerodctl status` shows which address the RPC listens on. It has to match the wallet's node address.
 	- Check the username and password in the node address against `rpc-login`.
-	- For a LAN node, check the address range and the firewall rule above.
+	- For a LAN node, check the address range, `rpcAllowFrom`, and the ufw or firewalld rule above.
 
 - A send shows in the wallet but never confirms:
 	- `tt-monerodctl status` shows whether a transaction is waiting for a Tor zone peer. It goes out once one connects.

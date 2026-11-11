@@ -43,6 +43,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 	- [Run modes](#run-modes)
 	- [Tree ownership](#tree-ownership)
 	- [Tor](#tor)
+	- [Firewall](#firewall)
 	- [Wallets](#wallets)
 	- [Boot](#boot)
 	- [NixOS](#nixos)
@@ -85,6 +86,7 @@ Design, requirements, and direction. The active pre-v1.0.0 bug/feature task list
 - Non-goals:
 	- Wallet management.
 	- Mining, or running P2Pool.
+	- Hardening the rest of the host, such as SSH.
 
 ## Assumptions
 
@@ -126,13 +128,15 @@ Common:  --config PATH
 
 3. With Tor on, check that the service is active and its SOCKS port listens. Restart it only when `--restart-tor` is given. Read the onion address and check its format.
 
-4. Fetch the ban list over Tor into a temp file, and check that every line is an IP address or range. Install it over the old one only when it passes. After a failed fetch, the old list stays.
+4. With `firewall` on, check through sudo that the tool's nftables table is loaded. Refuse to start without it, so `monerod` never runs without its rules.
 
-5. Take a ZFS snapshot, when a dataset is configured, and prune old ones.
+5. Fetch the ban list over Tor into a temp file, and check that every line is an IP address or range. Install it over the old one only when it passes. After a failed fetch, the old list stays.
 
-6. Hand the tree to the service account. See [Tree ownership](#tree-ownership).
+6. Take a ZFS snapshot, when a dataset is configured, and prune old ones.
 
-7. Launch in the configured mode, then wait a few seconds and check that `monerod` is still alive. When it isn't, print the end of its log and exit 1.
+7. Hand the tree to the service account. See [Tree ownership](#tree-ownership).
+
+8. Launch in the configured mode, then wait a few seconds and check that `monerod` is still alive. When it isn't, print the end of its log and exit 1.
 
 - `--debug` runs `monerod` in the foreground with its console, and without `--non-interactive`.
 
@@ -170,18 +174,19 @@ Common:  --config PATH
 	2. Creates the service account and its group, and adds the operator to the group.
 	3. Creates the data tree, or uses an existing one.
 	4. Downloads and verifies `monerod`, the same way `update` does.
-	5. Writes `bitmonero.conf` with a random RPC login, and prints the login once. The password is letters and digits only, since Feather takes the login as part of the node address.
+	5. Writes `bitmonero.conf` with a random RPC login, and prints the login once. The password is 32 letters and digits only, since Feather takes the login as part of the node address.
 	6. Installs Tor through apt when it's missing, adds a marked block to `torrc` for the onion services, and restarts Tor.
-	7. Pulls the pinned container image in Docker mode.
-	8. Installs and enables the boot unit when `startAtBoot` is on.
-	9. Copies itself to `/usr/local/bin` when it runs from somewhere else.
-	10. Ends with `repair --check`.
+	7. With `firewall` on, installs nftables through apt when `nft` is missing, writes the rules, and starts their unit. See [Firewall](#firewall).
+	8. Pulls the pinned container image in Docker mode.
+	9. Installs and enables the boot unit when `startAtBoot` is on.
+	10. Copies itself to `/usr/local/bin` when it runs from somewhere else.
+	11. Ends with `repair --check`.
 
 - When it finds an install already, it runs `repair` and then `update`.
 
 - It never installs Docker. Without Docker, it offers native mode.
 
-- On NixOS it skips steps 2, 6, 8, and 9. It checks those parts instead, and prints the module settings for whatever is missing.
+- On NixOS it skips steps 2, 6, 7, 9, and 10. It checks those parts instead, and prints the module settings for whatever is missing.
 
 - It never edits `torrc` lines outside its own marked block. A conflicting onion service is reported, with the lines to remove.
 
@@ -217,11 +222,13 @@ Common:  --config PATH
 	6. Ownership and modes match whether `monerod` runs.
 	7. `bitmonero.conf` has an RPC login, and only the account and group can read it.
 	8. With Tor on, Tor runs, its SOCKS port listens, the marked `torrc` block matches the config, and the onion addresses exist.
-	9. In Docker mode, the image is there, and an old stopped container gets removed.
-	10. With a dataset configured, it exists and is mounted at the base dir.
-	11. The ban list exists.
-	12. The boot unit is installed and enabled only when `startAtBoot` is on.
-	13. Any `monerod` that this tool didn't start is reported, and never killed.
+	9. With `firewall` on, the rules file matches the config, its unit is enabled, and the table is loaded. With it off, the unit and the table get removed.
+	10. When ufw or firewalld is active, it lets each `rpcAllowFrom` address reach the RPC port. A missing rule is reported with the command that adds it, and never added.
+	11. In Docker mode, the image is there, and an old stopped container gets removed.
+	12. With a dataset configured, it exists and is mounted at the base dir.
+	13. The ban list exists.
+	14. The boot unit is installed and enabled only when `startAtBoot` is on.
+	15. Any `monerod` that this tool didn't start is reported, and never killed.
 
 ## Project structure
 
@@ -237,6 +244,7 @@ source/internal/launch/     Docker and tmux modes
 source/internal/tree/       ownership hand-off
 source/internal/zfs/        snapshots and pruning
 source/internal/tor/        service checks, onion address, torrc block
+source/internal/firewall/   nftables rules and their unit
 source/internal/rpc/        get_info over digest auth
 source/internal/fetch/      downloads over Tor, signature and hash checks
 source/internal/update/
@@ -312,6 +320,16 @@ cicd/                       build, test, and release scripts
 
 - The config format is shcl, and the tool reads it with shcl's Go module.
 
+- The firewall rules go in the tool's own nftables table, rather than in ufw, firewalld, or `nftables.conf`.
+	- A separate table works beside any of those, or none, and only the tool edits it.
+	- A drop in any table wins, so the tool's table can't open a port that another firewall keeps closed.
+
+- fail2ban was looked at for the RPC login, and left out.
+	- On a LAN address, the firewall already limits the RPC to the addresses in `rpcAllowFrom`.
+	- Over the RPC onion service, every wallet connects from Tor on localhost. fail2ban can't tell them apart, so a ban would block all of them.
+	- The RPC password is 32 random letters and digits, which is too many to guess.
+	- `monerod` bans misbehaving p2p peers on its own, and the ban list covers known bad ranges.
+
 ## Plan
 
 - The first release is `v1.0.0-alpha.1`.
@@ -342,7 +360,7 @@ cicd/                       build, test, and release scripts
 	- An OpenPGP package, for the getmonero.org signature.
 	- The shcl Go module, `github.com/yottacore/shcl/source/go/v3`, at its latest published beta.
 
-- At run time it calls `docker` or `tmux`, `sudo`, `systemctl`, and `ss`. It also calls `zfs` when snapshots are on, and `apt-get` for `update --tor` on Debian.
+- At run time it calls `docker` or `tmux`, `sudo`, `systemctl`, and `ss`. It also calls `zfs` when snapshots are on, `nft` when the firewall is on, and `apt-get` for `update --tor` on Debian. `repair` calls `ufw` or `firewall-cmd` to read their rules, when one is active.
 
 ### Configuration model
 
@@ -377,6 +395,7 @@ cicd/                       build, test, and release scripts
 | `p2pPort`          | `18080`
 | `rpcBindIP`        | `127.0.0.1`                   | The LAN address when the wallet is on another host
 | `rpcPort`          | `18081`
+| `rpcAllowFrom`     | none                          | Addresses or ranges that may reach an RPC on a LAN address
 | `outPeers`         | 16 with Tor, 32 without
 | `blockSyncSize`    | 20 with Tor, 100 without
 | `zmq`              | `false`                       | Turn on only for P2Pool and the like
@@ -385,6 +404,7 @@ cicd/                       build, test, and release scripts
 | `rpcOnion`         | `false`                       | An onion address for the RPC, for wallets away from the LAN
 | `rpcOnionPort`     | `18089`                       | Restricted RPC listener on localhost, and its onion port
 | `torRpcServiceDir` | `/var/lib/tor/monerod-rpc/`
+| `firewall`         | `true`                        | See [Firewall](#firewall)
 | `startAtBoot`      | `false`
 | `extraArgs`        | none                          | Added to the `monerod` command as given
 
@@ -410,6 +430,7 @@ cicd/                       build, test, and release scripts
 | Parsing, checks, `status`, `watch`      | operator
 | Ban list and other downloads            | operator, or root in `update`
 | Read the onion address                  | operator through sudo
+| Read the firewall table                 | operator through sudo
 | Restart Tor, with `--restart-tor` only  | operator through sudo
 | ZFS snapshot and prune                  | operator through `zfs allow`, else sudo
 | Change tree ownership                   | operator through sudo
@@ -445,7 +466,7 @@ cicd/                       build, test, and release scripts
 	- `docker stop` sends SIGTERM and waits for `stopTimeout`, and `--init` passes the signal on to `monerod`.
 
 - What it doesn't do:
-	- With host networking, `monerod` can still connect to any port on localhost and on the LAN. Keeping p2p on Tor is up to the `monerod` options. The firewall rule under [Needs more thought](#needs-more-thought) would close that gap.
+	- With host networking, `monerod` can still connect to any port on localhost and on the LAN. Keeping p2p on Tor is up to the `monerod` options. With Tor on, the [Firewall](#firewall) rules block the LAN and the internet, but not localhost.
 	- The container shares the host's kernel, so a kernel bug could still let code out. It's less isolation than a VM.
 	- Being in the `docker` group is as good as root on that host. The operator has sudo already, so that doesn't add a new risk.
 
@@ -486,11 +507,32 @@ cicd/                       build, test, and release scripts
 
 - A transaction that a wallet sends through the RPC goes out only to Tor zone peers. Without any connected, `monerod` queues it and logs an error, then sends it once a Tor zone peer connects. `status` warns when the log shows a queued transaction.
 
+### Firewall
+
+- With `firewall` on, the tool keeps its rules in its own nftables table, `inet tt_monerodctl`, so they cover IPv4 and IPv6.
+
+- `setup` and `repair` write the rules to `/etc/tt-monerodctl/firewall.nft`, from the config. `tt-monerodctl-firewall.service` loads that file at boot.
+	- It loads it again whenever `nftables.service` starts, stops, or reloads. Debian's `nftables.conf` flushes every table, the tool's included.
+	- The file deletes the old table and adds the new one in a single nft transaction, so there's no gap without rules.
+
+- Outbound, with `useTor` on:
+	- A new connection from the service account to anything but loopback gets dropped and counted. A rate-limited log line names the address.
+	- Replies to connections that came in, such as a LAN wallet's RPC traffic, still go out.
+	- Tor runs as its own account, so its traffic isn't touched.
+	- It works the same in both modes, since a host-network container's sockets belong to the service account's uid.
+
+- Inbound, new connections from anywhere but loopback get dropped:
+	- On the RPC port, unless they come from an address in `rpcAllowFrom`.
+	- On `anonInboundPort` and `rpcOnionPort`, always. Tor reaches them over loopback.
+	- On `p2pPort`, unless `p2pBindIP` isn't a loopback address.
+
+- The table only drops traffic. A drop in another table still applies, so ufw or firewalld also has to let the wallet's host in. `repair` checks for taht rule, and prints the command when it's missing. The tool never changes another firewall's rules.
+
 ### Wallets
 
 - Setup for Feather and other wallets, on the same host, on the LAN, or away from it, is in [local-network-wallets.md](local-network-wallets.md).
 
-- The RPC binds to localhost unless a wallet on another host needs it. On a LAN address, the firewall should only let the wallet's host reach the RPC port.
+- The RPC binds to localhost unless a wallet on another host needs it. On a LAN address, `rpcAllowFrom` lists the hosts that may reach the RPC port. See [Firewall](#firewall).
 
 ### Boot
 
@@ -498,6 +540,7 @@ cicd/                       build, test, and release scripts
 	- `ExecStart` runs `tt-monerodctl start --foreground`, and `ExecStop` runs `tt-monerodctl stop`.
 	- `TimeoutStopSec` is a little longer than `stopTimeout`, so systemd doesn't kill `monerod` first.
 	- It starts after `network-online.target`, `tor.service`, and `docker.service` when those are used.
+	- With `firewall` on, it requires `tt-monerodctl-firewall.service`, so `monerod` never starts at boot without the rules.
 
 - With `startAtBoot` off, `repair` disables and removes the unit.
 
@@ -508,6 +551,7 @@ cicd/                       build, test, and release scripts
 	- Tor, with the p2p onion service and the optional RPC onion service.
 	- Docker, in Docker mode.
 	- `/etc/tt-monerodctl/config.shcl`, written from module options.
+	- The firewall unit and its rules.
 	- The boot unit.
 
 - `tt-monerodctl` detects NixOS by the `/etc/NIXOS` file. There, `setup` and `repair` still handle the data tree, the `monerod` download, and `bitmonero.conf`. For the rest they only check, and print the module options to set.
@@ -535,7 +579,9 @@ cicd/                       build, test, and release scripts
 
 - The config doesn't have any secrets in it. The RPC login is in `bitmonero.conf`, with mode 0660.
 
-- The RPC binds to localhost unless a wallet on another host needs it.
+- The RPC binds to localhost unless a wallet on another host needs it. On a LAN address, the firewall lets only the hosts in `rpcAllowFrom` reach it.
+
+- With Tor and the firewall on, a leak from `monerod` gets dropped and logged, rather than reaching the LAN or the internet.
 
 - Every download is checked before use. `monerod` releases need a good signature on the hash list and a matching hash. Tool releases need a matching SHA-256 sum.
 
@@ -543,15 +589,15 @@ cicd/                       build, test, and release scripts
 
 ### Testing
 
-- Unit tests run with the fake command runner. They check the exact command lists for each mode, with Tor on and off, and the config errors.
+- Unit tests run with the fake command runner. They check the exact command lists for each mode, with Tor on and off, and the config errors. They also check the rendered `firewall.nft` for each mix of `useTor`, `rpcAllowFrom`, and bind addresses.
 
 - A smoke test runs `monerod --offline` in the container against an empty data dir. It checks the hardening flags, the log, and a clean exit on `docker stop`.
 
 - A live start and stop on a real node checks ownership, listening ports, and that every outbound connection goes to the Tor SOCKS port.
 
-## Needs more thought
+- With the firewall on, a connection from the service account to a LAN address fails and bumps the drop counter. A wallet in `rpcAllowFrom` still syncs.
 
-- A firewall rule could drop any outbound traffic from the service account that isn't to localhost, when Tor is on. It would catch a leak in both modes, but it's a root change to the firewall.
+## Needs more thought
 
 - Tool releases could be signed, beyond a SHA-256 sum.
 
