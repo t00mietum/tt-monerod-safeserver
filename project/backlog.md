@@ -273,10 +273,21 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 
 	- The ID is the local time to the hundredth of a second. Opened is when it was written down, which may differ. (Use a keyboard macro and possibly something like project 'zuid' to generate.)
 
-	- Status values meaning: Testing means the fix is in and checks are running or still to run. Waiting on signoff means automated testing passed. Moot means something else changed that made it irrelevant. Canceled means it still applies but was decided against. Waiting for testing means the fix is in and waits on a long CI run or an outside test host. Can't reproduce means a real attempt to reproduce it failed.
+	- Status values meaning: Testing means the fix is in and checks are running or still to run. Waiting on signoff means automated testing passed. Canceled means it still applies but was decided against. Waiting for testing means the fix is in and waits on a long CI run or an outside test host. Closed always has a Closed reason.
+
+	- Closed reason values meaning:
+		- Done: finished and accepted.
+		- Could not reproduce: a real attempt to reproduce it failed.
+		- Won't fix: a real bug, but not worth fixing. Use Canceled for a feature that was decided against.
+		- Moot: something else changed that made it irrelevant.
+		- Duplicate: another issue covers it. Put that one in Superseded by ID.
+		- Superseded: a newer issue replaced it. Put that one in Superseded by ID.
+		- Works as intended: not a bug.
+
+	- Target version: fill in for every issue worked on since the last release and aimed at the next one, queued and started ones included, and every non-trivial bug.
 
 	- As issues are worked, and statuses change, place them in correct sorting order within the list:
-		- First by status: Waiting for answers, Waiting on signoff, Testing, Waiting for testing, Can't reproduce, Stalled, Started, Queued, Done, Deferred, Canceled, Moot
+		- First by status: Waiting for answers, Waiting on signoff, Testing, Waiting for testing, Stalled, Started, Queued, Closed, Deferred, Canceled
 		- Then by severity|priority: Critical, High, Avg, Low
 		- Then by type: Bugs, [not bugs together]
 
@@ -287,7 +298,8 @@ Template:
 - Title
 	- ID: YYYYmmDDHHMMSSNN
 	- Type: [Bug|Feature|Enhancement|Task]
-	- Status: [Queued|Waiting for answers|Waiting on signoff|Waiting for testing|Started|Testing|Stalled|Can't reproduce|Moot|Canceled|Deferred|Done]
+	- Status: [Queued|Waiting for answers|Waiting on signoff|Waiting for testing|Started|Testing|Stalled|Deferred|Canceled|Closed]
+	- Closed reason: [Done|Could not reproduce|Won't fix|Moot|Duplicate|Superseded|Works as intended]
 	- Needs local test suite run?:
 	- Needs external testing:
 	- Priority [Feature|Enhancement] | Severity [Bug]: [Critical|High|Avg|Low]
