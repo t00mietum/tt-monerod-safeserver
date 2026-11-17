@@ -30,6 +30,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Priority: High
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
+	- Target version: alpha.1
 	- Requirements:
 		- Take the shared parts from `tt-safeserver`, per `design.md`, and supply a `monerod` service behind its Service interface.
 		- Before any code here, the shared code moves out of `tt-minecraft-safeserver` into its own repo. That move is done from `tt-minecraft-safeserver`, as its item 2026111111303242.
@@ -46,6 +47,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111114120017
+	- Target version: alpha.1
 	- Requirements:
 		- Read `config.shcl` from Go.
 	- Decisions:
@@ -60,6 +62,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365398
+	- Target version: alpha.1
 	- Requirements:
 		- `start`, `stop`, `status`, and `watch`, per `design.md`.
 		- Podman, Docker, and native tmux modes. A container is the default, and Podman is preferred.
@@ -75,6 +78,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365411
+	- Target version: alpha.1
 	- Requirements:
 		- Run the checks listed in `design.md`, each with an optional fix.
 		- `--check` only reports.
@@ -88,6 +92,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365424
+	- Target version: alpha.1
 	- Requirements:
 		- Install from scratch, per `design.md`.
 		- Make the RPC password from 32 letters and digits only, since Feather takes the login as part of the node address.
@@ -102,6 +107,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365411
+	- Target version: alpha.1
 	- Requirements:
 		- Keep the tool's rules in its own nftables table, loaded by its own systemd unit, per `design.md`.
 		- With Tor on, drop new outbound connections from the service account that aren't to loopback.
@@ -119,6 +125,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365411
+	- Target version: alpha.1
 	- Requirements:
 		- Update the tool from GitHub releases.
 		- Update `monerod` from getmonero.org, with the signature and hash checked.
@@ -133,6 +140,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365398
+	- Target version: alpha.1
 	- Requirements:
 		- Default configuration hard-coded.
 		- Overridden by the config file.
@@ -149,6 +157,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365424
+	- Target version: alpha.1
 	- Requirements:
 		- Add `startAtBoot` to the config, and a systemd unit that runs `start --foreground`, per `design.md`.
 		- `start` and `stop` go through `systemctl` when the unit is enabled.
@@ -162,6 +171,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365411
+	- Target version: alpha.1
 	- Requirements:
 		- Bind the RPC to localhost by default, or to a LAN address.
 		- Add `rpcOnion`, with its own onion service and a restricted RPC listener on localhost, per `design.md`.
@@ -175,6 +185,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365438
+	- Target version: alpha.1
 	- Requirements:
 		- Add a flake with a NixOS module for the account, Tor, Podman or Docker, the config file, and the boot unit.
 		- On NixOS, `setup`, `repair`, and `update` check the system parts and print module settings, rather than change them.
@@ -186,6 +197,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Priority: Avg
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
+	- Target version: alpha.1
 	- Requirements:
 		- A CI/CD pipeline kicked off by a bash script (`cicd/cicd.bash`). It builds, tests, and can commit and push. Packaging and publishing are opt-in.
 
@@ -197,6 +209,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111110002951
+	- Target version: alpha.1
 	- Requirements:
 		- Runnable via a single `curl` or `wget`, and documented under "how to install".
 		- Downloads, installs, and runs the latest release, with an option to abort.
@@ -212,6 +225,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111110002951, 2026111110030775
+	- Target version: alpha.1
 	- Requirements:
 		- Publish `v1.0.0-alpha.1` on GitHub, with Linux builds for amd64 and arm64 and a checksum file that `update --self` can read.
 
@@ -223,6 +237,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111109365438
+	- Target version: alpha.1
 	- Requirements:
 		- Move the existing node to the new account and tool.
 		- Point Feather at the node with the RPC login in the node address, per `local-network-wallets.md`.
@@ -236,6 +251,7 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Opened: 2026-11-11
 	- Opened by: t00mietum
 	- Prereq IDs: 2026111110002951
+	- Target version: alpha.1
 	- Requirements:
 		- Runnable via a single `curl` or `wget`, and documented under "how to develop".
 		- Clones main, installs dependencies, and states what it will do, with an option to abort.
@@ -278,6 +294,7 @@ Template:
 	- Prereq IDs:
 	- Related IDs:
 	- Target OS:
+	- Target version:
 	- Test environment:
 	- Version and build:
 	- Requirements  [Feature]:
