@@ -38,6 +38,8 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Decisions:
 		- No copy of a shared part gets written here.
 		- Once `tt-safeserver` has its own repo, both tools keep it up and also fix it, but from one project at a time.
+	- Prereq IDs: tt-minecraft-safeserver:2026111111303242
+	- 2026-11-17: Prereq added. The move is done from tt-minecraft-safeserver, and that item waits for this project to start on code.
 
 - Config reader for shcl in Go
 	- ID: 2026111109365398
@@ -200,6 +202,8 @@ This is a product backlog just for pre-v1.0.0 release. After that, bugs, feature
 	- Target version: alpha.1
 	- Requirements:
 		- A CI/CD pipeline kicked off by a bash script (`cicd/cicd.bash`). It builds, tests, and can commit and push. Packaging and publishing are opt-in.
+	- Prereq IDs: 2026111114120017
+	- 2026-11-17: Prereq added. No code gets written here before the shared code moves, and the pipeline copies the one in tt-minecraft-safeserver, which needs go.mod and the shared module to build.
 
 - Release-install script
 	- ID: 2026111110030775
